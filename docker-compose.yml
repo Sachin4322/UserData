@@ -8,6 +8,8 @@ services:
       MYSQL_DATABASE: membersdb
     ports:
       - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
     networks:
       - appnet
 
@@ -30,3 +32,6 @@ services:
 networks:
   appnet:
     driver: bridge
+
+volumes:
+  mysql_data:
