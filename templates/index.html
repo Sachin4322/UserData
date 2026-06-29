@@ -2,17 +2,64 @@
 <html>
 <head>
     <title>Member App</title>
+    <style>
+        table{
+            border-collapse: collapse;
+            width:80%;
+            margin-top:20px;
+        }
+        table,th,td{
+            border:1px solid black;
+            padding:8px;
+        }
+        th{
+            background:#f2f2f2;
+        }
+    </style>
 </head>
 <body>
-    <h2>Member Form DevOpes</h2>
 
-    <form action="/save" method="post">
-        Name: <input type="text" name="name"><br><br>
-        Gender: <input type="text" name="gender"><br><br>
-        Mobile: <input type="text" name="mobile"><br><br>
-        Age: <input type="number" name="age"><br><br>
+<h2>Member Form DevOps</h2>
 
-        <button type="submit">Save</button>
-    </form>
+<form action="/save" method="post">
+    Name:
+    <input type="text" name="name" required><br><br>
+
+    Gender:
+    <input type="text" name="gender" required><br><br>
+
+    Mobile:
+    <input type="text" name="mobile" required><br><br>
+
+    Age:
+    <input type="number" name="age" required><br><br>
+
+    <button type="submit">Save</button>
+</form>
+
+<hr>
+
+<h2>Member List</h2>
+
+<table>
+    <tr>
+        <th>ID</th>
+        <th>Name</th>
+        <th>Gender</th>
+        <th>Mobile</th>
+        <th>Age</th>
+    </tr>
+
+    {% for member in members %}
+    <tr>
+        <td>{{ member[0] }}</td>
+        <td>{{ member[1] }}</td>
+        <td>{{ member[2] }}</td>
+        <td>{{ member[3] }}</td>
+        <td>{{ member[4] }}</td>
+    </tr>
+    {% endfor %}
+</table>
+
 </body>
 </html>
