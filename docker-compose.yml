@@ -9,7 +9,7 @@ services:
     ports:
       - "3306:3306"
     volumes:
-      - mysql_data:/var/lib/mysql
+      - /home/ec2-user/mysql-data:/var/lib/mysql
     networks:
       - appnet
 
