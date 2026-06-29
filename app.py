@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request
+from flask import Flask, render_template, request, redirect, url_for
 import mysql.connector
 import os
 import time
@@ -13,18 +13,15 @@ def get_db():
         database=os.getenv("MYSQL_DATABASE", "membersdb")
     )
 
-# wait for mysql startup
+# Wait for MySQL startup
 time.sleep(10)
 
 @app.route('/')
 def home():
-    return render_template("index.html")
-
-@app.route('/save', methods=['POST'])
-def save():
     db = get_db()
     cursor = db.cursor()
 
+    # Create table if it doesn't exist
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS members (
             id INT AUTO_INCREMENT PRIMARY KEY,
@@ -34,6 +31,21 @@ def save():
             age INT
         )
     """)
+
+    # Fetch all members
+    cursor.execute("SELECT * FROM members ORDER BY id DESC")
+    members = cursor.fetchall()
+
+    cursor.close()
+    db.close()
+
+    return render_template("index.html", members=members)
+
+
+@app.route('/save', methods=['POST'])
+def save():
+    db = get_db()
+    cursor = db.cursor()
 
     name = request.form['name']
     gender = request.form['gender']
@@ -49,7 +61,8 @@ def save():
     cursor.close()
     db.close()
 
-    return "Data Saved Successfully"
+    return redirect(url_for('home'))
+
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000)
