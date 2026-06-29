@@ -14,7 +14,7 @@ services:
       - appnet
 
   app:
-    build: .
+    image: mpl143/two-tier-flask-app:latest
     container_name: flask-app
     restart: always
     depends_on:
