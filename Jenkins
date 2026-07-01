@@ -47,4 +47,21 @@ pipeline {
             }
         }
     }
+post {
+    success {
+        emailext(
+            subject: 'Build is Successful',
+            body: 'Your build is successful...!',
+            to: 'sachinshinde390@gmail.com'
+        )
+    }
+
+    failure {
+        emailext(
+            subject: 'Build Failed',
+            body: 'Your build has failed...!',
+            to: 'sachinshinde390@gmail.com'
+        )
+    }
+}
 }
