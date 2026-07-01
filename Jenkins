@@ -11,6 +11,11 @@ pipeline {
                     url: 'https://github.com/Sachin4322/UserData.git'
             }
         }
+        stage ('Trivy File Sysytem Scan'){
+            steps {
+                sh 'trivy fs . -o results.json'
+            }
+        } 
 
         stage('Build') {
             steps {
