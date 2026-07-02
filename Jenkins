@@ -1,51 +1,70 @@
 @Library('Shared') _
 
 pipeline {
-    agent {
-        label 'dev'
-    }
-
+    agent none  // Don't run on any agent by default
+    
     stages {
+        stage('Build & Scan') {
+            agent {
+                label 'dev'  // Runs on your node PC
+            }
+            stages {
+                stage('Code Clone') {
+                    steps {
+                        script {
+                            clone('https://github.com/Sachin4322/UserData.git', 'master')
+                        }
+                    }
+                }
 
-        stage('Code Clone') {
-            steps {
-                script {
-                    clone('https://github.com/Sachin4322/UserData.git', 'master')
+                stage('Trivy File System Scan') {
+                    steps {
+                        script {
+                            trivy()
+                        }
+                    }
+                }
+
+                stage('Build') {
+                    steps {
+                        sh 'docker build -t two-tier-flask-app:latest .'
+                    }
+                }
+
+                stage('Test') {
+                    steps {
+                        echo 'All required test cases have passed.'
+                    }
+                }
+
+                stage('Push to Docker Hub') {
+                    steps {
+                        script {
+                            docker_push('dockerhubcicd', 'two-tier-flask-app')
+                        }
+                    }
                 }
             }
         }
-
-        stage('Trivy File System Scan') {
+        
+        stage('Deploy to Server') {
+            agent {
+                label 'production'  // Your server PC agent
+            }
             steps {
                 script {
-                    trivy()
+                    // Pull the image from Docker Hub on your server
+                    sh 'docker pull dockerhubcicd/two-tier-flask-app:latest'
+                    
+                    // Deploy using docker-compose on the server
+                    sh '''
+                        # Stop existing containers
+                        docker compose down || true
+                        
+                        # Start new containers
+                        docker compose up -d --build
+                    '''
                 }
-            }
-        }
-
-        stage('Build') {
-            steps {
-                sh 'docker build -t two-tier-flask-app:latest .'
-            }
-        }
-
-        stage('Test') {
-            steps {
-                echo 'All required test cases have passed.'
-            }
-        }
-
-        stage('Push to Docker Hub') {
-            steps {
-                script {
-                    docker_push('dockerhubcicd', 'two-tier-flask-app')
-                }
-            }
-        }
-
-        stage('Deploy') {
-            steps {
-                sh 'docker compose up -d --build'
             }
         }
     }
@@ -63,6 +82,7 @@ Build Number : ${env.BUILD_NUMBER}
 Build URL    : ${env.BUILD_URL}
 
 The CI/CD pipeline completed successfully.
+Deployed to: Production Server
 """
             )
         }
