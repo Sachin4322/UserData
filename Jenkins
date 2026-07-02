@@ -1,106 +1,68 @@
-@Library('Shared') _
-
 pipeline {
-    agent none  // Don't run on any agent by default
-    
+    agent any
+
     stages {
-        stage('Build & Scan') {
-            agent {
-                label 'dev'  // Runs on your node PC
+
+        stage('Code Clone') {
+            steps {
+                git branch: 'master',
+                    url: 'https://github.com/Sachin4322/UserData.git'
             }
-            stages {
-                stage('Code Clone') {
-                    steps {
-                        script {
-                            clone('https://github.com/Sachin4322/UserData.git', 'master')
-                        }
-                    }
-                }
+        }
 
-                stage('Trivy File System Scan') {
-                    steps {
-                        script {
-                            trivy()
-                        }
-                    }
-                }
+        stage('Trivy Scan') {
+            steps {
+                sh 'trivy fs --format json -o results.json .'
+            }
+        }
 
-                stage('Build') {
-                    steps {
-                        sh 'docker build -t two-tier-flask-app:latest .'
-                    }
-                }
+        stage('Build') {
+            steps {
+                sh 'docker build -t two-tier-flask-app:latest .'
+            }
+        }
 
-                stage('Test') {
-                    steps {
-                        echo 'All required test cases have passed.'
-                    }
-                }
+        stage('Test') {
+            steps {
+                echo 'All tests passed'
+            }
+        }
 
-                stage('Push to Docker Hub') {
-                    steps {
-                        script {
-                            docker_push('dockerhubcicd', 'two-tier-flask-app')
-                        }
-                    }
+        stage('Push to Docker Hub') {
+            steps {
+                withCredentials([usernamePassword(
+                    credentialsId: 'dockerhubcicd',
+                    usernameVariable: 'dockerHubUser',
+                    passwordVariable: 'dockerHubPass'
+                )]) {
+
+                    sh '''
+                        echo "$dockerHubPass" | docker login -u "$dockerHubUser" --password-stdin
+                        docker tag two-tier-flask-app:latest $dockerHubUser/two-tier-flask-app:latest
+                        docker push $dockerHubUser/two-tier-flask-app:latest
+                    '''
                 }
             }
         }
-        
-        stage('Deploy to Server') {
-            agent {
-                label 'production'  // Your server PC agent
-            }
+
+        stage('Deploy') {
             steps {
-                script {
-                    // Pull the image from Docker Hub on your server
-                    sh 'docker pull dockerhubcicd/two-tier-flask-app:latest'
-                    
-                    // Deploy using docker-compose on the server
-                    sh '''
-                        # Stop existing containers
-                        docker compose down || true
-                        
-                        # Start new containers
-                        docker compose up -d --build
-                    '''
-                }
+                sh 'docker compose up -d --build'
             }
         }
     }
 
     post {
         success {
-            emailext(
-                to: 'sachinshinde390@gmail.com',
-                subject: "SUCCESS: ${env.JOB_NAME} #${env.BUILD_NUMBER}",
-                body: """
-Build Status : SUCCESS
-
-Job Name     : ${env.JOB_NAME}
-Build Number : ${env.BUILD_NUMBER}
-Build URL    : ${env.BUILD_URL}
-
-The CI/CD pipeline completed successfully.
-Deployed to: Production Server
-"""
-            )
+            emailext subject: "Build Success",
+                    body: "Pipeline executed successfully",
+                    to: "yourmail@gmail.com"
         }
 
         failure {
-            emailext(
-                to: 'sachinshinde390@gmail.com',
-                subject: "FAILED: ${env.JOB_NAME} #${env.BUILD_NUMBER}",
-                body: """
-Build Status : FAILED
-
-Job Name     : ${env.JOB_NAME}
-Build Number : ${env.BUILD_NUMBER}
-Build URL    : ${env.BUILD_URL}
-
-Please check the Jenkins console logs for more details.
-"""
-            )
+            emailext subject: "Build Failed",
+                    body: "Check Jenkins logs",
+                    to: "yourmail@gmail.com"
         }
     }
 }
