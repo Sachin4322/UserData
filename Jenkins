@@ -18,14 +18,14 @@ pipeline {
         stage('Trivy File System Scan') {
             steps {
                 script {
-                    trivy()
+                    trivy_fs()
                 }
             }
         }
 
         stage('Build') {
             steps {
-                sh 'docker build -t two-tier-flask-app:latest .'
+                sh "docker build -t two-tier-flask-app:${BUILD_NUMBER} ."
             }
         }
 
@@ -38,14 +38,18 @@ pipeline {
         stage('Push to Docker Hub') {
             steps {
                 script {
-                    docker_push('dockerhubcicd', 'two-tier-flask-app')
+                    docker_push('dockerhubcicd', "two-tier-flask-app:${BUILD_NUMBER}")
                 }
             }
         }
 
         stage('Deploy') {
             steps {
-                sh 'docker compose up -d --build'
+                sh """
+                    docker stop flask-app || true
+                    docker rm flask-app || true
+                    docker run -d --name flask-app -p 5000:5000 two-tier-flask-app:${BUILD_NUMBER}
+                """
             }
         }
     }
@@ -61,8 +65,6 @@ Build Status : SUCCESS
 Job Name     : ${env.JOB_NAME}
 Build Number : ${env.BUILD_NUMBER}
 Build URL    : ${env.BUILD_URL}
-
-The CI/CD pipeline completed successfully.
 """
             )
         }
@@ -77,8 +79,6 @@ Build Status : FAILED
 Job Name     : ${env.JOB_NAME}
 Build Number : ${env.BUILD_NUMBER}
 Build URL    : ${env.BUILD_URL}
-
-Please check the Jenkins console logs for more details.
 """
             )
         }
