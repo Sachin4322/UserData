@@ -20,7 +20,7 @@ services:
     depends_on:
       - db
     environment:
-      MYSQL_HOST: db
+      MYSQL_HOST: 52.51.150.138
       MYSQL_USER: root
       MYSQL_PASSWORD: root123
       MYSQL_DATABASE: membersdb
