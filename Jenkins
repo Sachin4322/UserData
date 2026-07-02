@@ -1,4 +1,5 @@
 @Library('Shared') _
+
 pipeline {
     agent {
         label 'dev'
@@ -8,18 +9,19 @@ pipeline {
 
         stage('Code Clone') {
             steps {
-                script{
+                script {
                     clone('https://github.com/Sachin4322/UserData.git', 'master')
                 }
             }
         }
-        stage ('Trivy File Sysytem Scan'){
+
+        stage('Trivy File System Scan') {
             steps {
-                script{
+                script {
                     trivy_fs()
                 }
             }
-        } 
+        }
 
         stage('Build') {
             steps {
@@ -36,7 +38,7 @@ pipeline {
         stage('Push to Docker Hub') {
             steps {
                 script {
-                    docker_push('dockerhubcicd','two-tier-flask-app')
+                    docker_push('dockerhubcicd', 'two-tier-flask-app')
                 }
             }
         }
@@ -47,21 +49,38 @@ pipeline {
             }
         }
     }
-post {
-    success {
-        emailext(
-            subject: 'Build is Successful',
-            body: 'Your build is successful...!',
-            to: 'sachinshinde390@gmail.com'
-        )
-    }
 
-    failure {
-        emailext(
-            subject: 'Build Failed',
-            body: 'Your build has failed...!',
-            to: 'sachinshinde390@gmail.com'
-        )
+    post {
+        success {
+            emailext(
+                to: 'sachinshinde390@gmail.com',
+                subject: "SUCCESS: ${env.JOB_NAME} #${env.BUILD_NUMBER}",
+                body: """
+Build Status : SUCCESS
+
+Job Name     : ${env.JOB_NAME}
+Build Number : ${env.BUILD_NUMBER}
+Build URL    : ${env.BUILD_URL}
+
+The CI/CD pipeline completed successfully.
+"""
+            )
+        }
+
+        failure {
+            emailext(
+                to: 'sachinshinde390@gmail.com',
+                subject: "FAILED: ${env.JOB_NAME} #${env.BUILD_NUMBER}",
+                body: """
+Build Status : FAILED
+
+Job Name     : ${env.JOB_NAME}
+Build Number : ${env.BUILD_NUMBER}
+Build URL    : ${env.BUILD_URL}
+
+Please check the Jenkins console logs for more details.
+"""
+            )
+        }
     }
-}
 }
