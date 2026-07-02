@@ -1,18 +1,25 @@
+@Library('Shared') _
+
 pipeline {
-    agent any
+    agent {
+        label 'dev'
+    }
 
     stages {
 
         stage('Code Clone') {
             steps {
-                git branch: 'master',
-                    url: 'https://github.com/Sachin4322/UserData.git'
+                script {
+                    clone('https://github.com/Sachin4322/UserData.git', 'master')
+                }
             }
         }
 
-        stage('Trivy Scan') {
+        stage('Trivy File System Scan') {
             steps {
-                sh 'trivy fs --format json -o results.json .'
+                script {
+                    trivy()
+                }
             }
         }
 
@@ -24,23 +31,14 @@ pipeline {
 
         stage('Test') {
             steps {
-                echo 'All tests passed'
+                echo 'All required test cases have passed.'
             }
         }
 
         stage('Push to Docker Hub') {
             steps {
-                withCredentials([usernamePassword(
-                    credentialsId: 'dockerhubcicd',
-                    usernameVariable: 'dockerHubUser',
-                    passwordVariable: 'dockerHubPass'
-                )]) {
-
-                    sh '''
-                        echo "$dockerHubPass" | docker login -u "$dockerHubUser" --password-stdin
-                        docker tag two-tier-flask-app:latest $dockerHubUser/two-tier-flask-app:latest
-                        docker push $dockerHubUser/two-tier-flask-app:latest
-                    '''
+                script {
+                    docker_push('dockerhubcicd', 'two-tier-flask-app')
                 }
             }
         }
@@ -54,15 +52,35 @@ pipeline {
 
     post {
         success {
-            emailext subject: "Build Success",
-                    body: "Pipeline executed successfully",
-                    to: "yourmail@gmail.com"
+            emailext(
+                to: 'sachinshinde390@gmail.com',
+                subject: "SUCCESS: ${env.JOB_NAME} #${env.BUILD_NUMBER}",
+                body: """
+Build Status : SUCCESS
+
+Job Name     : ${env.JOB_NAME}
+Build Number : ${env.BUILD_NUMBER}
+Build URL    : ${env.BUILD_URL}
+
+The CI/CD pipeline completed successfully.
+"""
+            )
         }
 
         failure {
-            emailext subject: "Build Failed",
-                    body: "Check Jenkins logs",
-                    to: "yourmail@gmail.com"
+            emailext(
+                to: 'sachinshinde390@gmail.com',
+                subject: "FAILED: ${env.JOB_NAME} #${env.BUILD_NUMBER}",
+                body: """
+Build Status : FAILED
+
+Job Name     : ${env.JOB_NAME}
+Build Number : ${env.BUILD_NUMBER}
+Build URL    : ${env.BUILD_URL}
+
+Please check the Jenkins console logs for more details.
+"""
+            )
         }
     }
 }
