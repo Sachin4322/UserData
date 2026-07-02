@@ -1,3 +1,4 @@
+@Library('Shared') _
 pipeline {
     agent {
         label 'dev'
@@ -7,13 +8,16 @@ pipeline {
 
         stage('Code Clone') {
             steps {
-                git branch: 'master',
-                    url: 'https://github.com/Sachin4322/UserData.git'
+                script{
+                    clone('https://github.com/Sachin4322/UserData.git', 'master')
+                }
             }
         }
         stage ('Trivy File Sysytem Scan'){
             steps {
-                sh 'trivy fs . -o results.json'
+                script{
+                    trivy_fs()
+                }
             }
         } 
 
@@ -31,17 +35,8 @@ pipeline {
 
         stage('Push to Docker Hub') {
             steps {
-                withCredentials([usernamePassword(
-                    credentialsId: 'dockerhubcicd',
-                    usernameVariable: 'dockerHubUser',
-                    passwordVariable: 'dockerHubPass'
-                )]) {
-
-                    sh '''
-                    echo "$dockerHubPass" | docker login -u "$dockerHubUser" --password-stdin
-                    docker tag two-tier-flask-app:latest $dockerHubUser/two-tier-flask-app:latest
-                    docker push $dockerHubUser/two-tier-flask-app:latest
-                    '''
+                script {
+                    docker_push('dockerhubcicd','two-tier-flask-app')
                 }
             }
         }
